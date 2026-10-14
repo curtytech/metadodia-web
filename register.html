@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#f6f7fb">
+    <title>Criar conta | dia a dia</title>
+
+    <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+</head>
+
+<body class="min-h-screen bg-[#f6f7fb] text-slate-800 antialiased">
+    <main class="flex min-h-screen items-center justify-center px-4 py-8 sm:px-6" id="app">
+        <section
+            class="grid w-full max-w-5xl overflow-hidden rounded-2xl border border-slate-200/80 bg-white shadow-xl shadow-slate-200/50 lg:min-h-[600px] lg:grid-cols-[0.9fr_1.1fr]">
+            <aside
+                class="relative hidden flex-col justify-between overflow-hidden bg-gradient-to-br from-indigo-600 to-violet-600 p-10 text-white lg:flex xl:p-12">
+                <a href="index.html" class="relative z-10 flex items-center gap-3 no-underline">
+                    <span class="grid size-10 place-items-center rounded-2xl bg-white/15 text-xl font-bold">d.</span>
+                    <span class="text-xl font-bold tracking-tight">dia a dia</span>
+                </a>
+
+                <div class="relative z-10 max-w-sm">
+                    <div class="mb-6 grid size-12 place-items-center rounded-2xl bg-white/15 text-2xl">✦</div>
+                    <h1 class="text-3xl font-bold leading-tight tracking-tight">Um passo de cada vez.</h1>
+                    <p class="mt-3 text-sm leading-6 text-indigo-100">Pequenas tarefas também te levam longe. Entre e
+                        continue no seu ritmo.</p>
+                </div>
+
+                <p class="relative z-10 text-xs font-medium text-indigo-100">Seu dia, mais leve e organizado.</p>
+                <div aria-hidden="true"
+                    class="absolute -bottom-24 -right-20 size-72 rounded-full border border-white/10"></div>
+                <div aria-hidden="true"
+                    class="absolute -bottom-12 -right-8 size-48 rounded-full border border-white/10"></div>
+            </aside>
+
+            <div class="flex flex-col justify-center px-6 py-8 sm:px-12 sm:py-12 lg:px-14 xl:px-20">
+                <a href="index.html" class="mb-10 flex w-fit items-center gap-2.5 no-underline lg:hidden">
+                    <span
+                        class="grid size-9 place-items-center rounded-xl bg-indigo-600 text-lg font-bold text-white">d.</span>
+                    <span class="font-bold tracking-tight text-slate-900">dia a dia</span>
+                </a>
+
+                <div class="mb-8">
+                    <p class="mb-2 text-sm font-semibold text-indigo-600">Comece por aqui</p>
+                    <h2 class="text-3xl font-bold tracking-tight text-slate-900">Crie sua conta</h2>
+                    <p class="mt-2 text-sm leading-6 text-slate-500">Organize seu dia, uma tarefa de cada vez.</p>
+                </div>
+
+                <form class="space-y-5" @submit.prevent="registerUser">
+                    <div>
+                        <label for="nome" class="mb-2 block text-sm font-semibold text-slate-700">Nome</label>
+                        <input id="nome" name="nome" type="text" autocomplete="name" required placeholder="Seu nome"
+                            class="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-800 outline-none transition placeholder:text-slate-400 focus:border-indigo-400 focus:ring-4 focus:ring-indigo-100">
+                    </div>
+
+                    <div>
+                        <label for="email" class="mb-2 block text-sm font-semibold text-slate-700">E-mail</label>
+                        <input id="email" name="email" type="email" autocomplete="email" required
+                            placeholder="voce@email.com"
+                            class="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-800 outline-none transition placeholder:text-slate-400 focus:border-indigo-400 focus:ring-4 focus:ring-indigo-100">
+                    </div>
+
+                    <div>
+                        <div class="mb-2 flex items-center justify-between">
+                            <label for="password" class="block text-sm font-semibold text-slate-700">Senha</label>
+                        </div>
+                        <input id="password" name="password" type="password" autocomplete="new-password" required
+                            placeholder="Sua senha"
+                            class="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-800 outline-none transition placeholder:text-slate-400 focus:border-indigo-400 focus:ring-4 focus:ring-indigo-100">
+                    </div>
+
+                    <button type="submit" :disabled="isSubmitting || registrationSucceeded"
+                        class="w-full rounded-xl bg-indigo-600 px-4 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-indigo-700 focus:outline-none focus:ring-4 focus:ring-indigo-200 disabled:cursor-not-allowed disabled:opacity-60">
+                        {{ isSubmitting ? 'Criando conta...' : registrationSucceeded ? 'Conta criada' : 'Criar conta' }}
+                    </button>
+                    <p v-if="statusMessage" role="status" aria-live="polite" class="text-center text-sm"
+                        :class="registrationSucceeded ? 'text-emerald-700' : isSubmitting ? 'text-indigo-600' : 'text-rose-600'">
+                        {{ statusMessage }}
+                    </p>
+                </form>
+
+                <p class="mt-7 text-center text-sm text-slate-500">
+                    Já tem uma conta?
+                    <a href="login.html"
+                        class="font-semibold text-indigo-600 no-underline hover:text-indigo-700">Entrar</a>
+                </p>
+                <a v-if="registrationSucceeded" href="login.html"
+                    class="mt-4 text-center text-sm font-semibold text-indigo-600 no-underline hover:text-indigo-700">Ir para o login</a>
+                <a href="index.html"
+                    class="mt-8 text-center text-xs font-medium text-slate-400 no-underline transition hover:text-slate-600">Voltar
+                    para o início</a>
+            </div>
+        </section>
+    </main>
+    <script>
+        const { createApp, ref } = Vue;
+        const URLPOST = "https://onlinestorage.you.tec.br/api/";
+        const URLGET = "https://onlinestorage.you.tec.br/api/getkey/metadodia-web/users";
+
+        createApp({
+            setup() {
+                const isSubmitting = ref(false);
+                const registrationSucceeded = ref(false);
+                const statusMessage = ref("");
+
+                async function registerUser(event) {
+                    const formData = new FormData(event.currentTarget);
+                    const formUser = Object.fromEntries(formData.entries());
+
+                    isSubmitting.value = true;
+                    registrationSucceeded.value = false;
+                    statusMessage.value = "Protegendo sua senha...";
+
+                    try {
+                        const user = {
+                            ...formUser,
+                            password: await hashPassword(formUser.password)
+                        };
+
+                        statusMessage.value = "Consultando usuários cadastrados...";
+                        const usersResponse = await fetch(URLGET, {
+                            headers: { "Accept": "application/json" }
+                        });
+                        let users = [];
+
+                        if (usersResponse.status !== 404) {
+                            const usersText = await usersResponse.text();
+                            let storedData;
+
+                            try {
+                                storedData = usersText ? JSON.parse(usersText) : {};
+                            } catch {
+                                throw new Error("A resposta de usuários da API não é um JSON válido.");
+                            }
+
+                            if (!usersResponse.ok) {
+                                throw new Error(storedData.message || storedData.error || "Não foi possível consultar os usuários.");
+                            }
+
+                            if (!Object.prototype.hasOwnProperty.call(storedData, "value")) {
+                                throw new Error("A resposta da API não contém os dados de usuários esperados.");
+                            }
+
+                            const storedUsers = storedData.value;
+                            users = Array.isArray(storedUsers)
+                                ? storedUsers
+                                : storedUsers == null
+                                    ? []
+                                    : [storedUsers];
+                        }
+
+                        users.push(user);
+                        statusMessage.value = "Salvando sua conta...";
+                        const response = await fetch(URLPOST, {
+                            method: "POST",
+                            headers: {
+                                "Accept": "application/json",
+                                "Content-Type": "application/json"
+                            },
+                            body: JSON.stringify({
+                                bucket: "metadodia-web",
+                                key: "users",
+                                value: users
+                            })
+                        });
+                        const responseText = await response.text();
+                        let responseData = {};
+
+                        try {
+                            responseData = responseText ? JSON.parse(responseText) : {};
+                        } catch {
+                            responseData = {};
+                        }
+
+                        if (!response.ok) {
+                            throw new Error(responseData.message || responseData.error || "Não foi possível criar sua conta.");
+                        }
+
+                        registrationSucceeded.value = true;
+                        statusMessage.value = responseData.message || "Conta criada com sucesso!";
+                    } catch (error) {
+                        statusMessage.value = error.message || "Não foi possível conectar ao servidor. Tente novamente.";
+                    } finally {
+                        isSubmitting.value = false;
+                    }
+                }
+
+                return { isSubmitting, registrationSucceeded, statusMessage, registerUser };
+            }
+        }).mount("#app");
+
+    </script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/bcryptjs/2.4.3/bcrypt.min.js"></script>
+    <script src="password.js"></script>
+
+</body>
+
+</html>
