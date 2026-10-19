@@ -133,6 +133,9 @@
                             throw new Error("E-mail ou senha incorretos.");
                         }
 
+                        sessionStorage.setItem("metadodia-authenticated-user", user.email);
+                        sessionStorage.setItem("metadodia-authenticated-user-name", user.nome || "");
+
                         statusMessage.value = "Login realizado. Redirecionando...";
                         window.location.href = "index.html";
                     } catch (error) {

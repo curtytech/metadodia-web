@@ -7,6 +7,11 @@
     <title>Dia a dia | Suas tarefas</title>
     <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+    <script>
+        if (!sessionStorage.getItem("metadodia-authenticated-user")) {
+            window.location.replace("login.html");
+        }
+    </script>
 </head>
 <body class="min-h-screen bg-[#f6f7fb] text-slate-800 antialiased">
     <div id="app" class="min-h-screen">
@@ -37,19 +42,19 @@
 
                 <div class="mb-3 mt-10 flex items-center justify-between px-3">
                     <p class="text-[11px] font-bold uppercase tracking-[0.18em] text-slate-400">Categorias</p>
-                    <span class="text-lg leading-none text-slate-400">+</span>
                 </div>
                 <nav class="space-y-1" aria-label="Categorias">
-                    <button
+                    <div
                         v-for="category in categories"
                         :key="category.name"
-                        @click="selectCategory(category.name)"
-                        class="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left text-sm font-medium transition"
-                        :class="activeCategory === category.name ? 'bg-slate-100 text-slate-900' : 'text-slate-500 hover:bg-slate-50 hover:text-slate-800'"
+                        class="group flex items-center gap-1 rounded-xl transition"
                     >
-                        <span class="size-2.5 rounded-full" :class="category.color"></span>
-                        {{ category.name }}
-                    </button>
+                        <button @click="selectCategory(category.name)" type="button" class="flex min-w-0 flex-1 items-center gap-3 rounded-xl px-3 py-2.5 text-left text-sm font-medium transition" :class="activeCategory === category.name ? 'bg-slate-100 text-slate-900' : 'text-slate-500 hover:bg-slate-50 hover:text-slate-800'">
+                            <span class="size-2.5 shrink-0 rounded-full" :class="category.color"></span>
+                            <span class="truncate">{{ category.name }}</span>
+                        </button>
+                        <button v-if="category.name !== 'Todas'" @click="requestCategoryDeletion(category.name)" type="button" class="grid size-8 shrink-0 place-items-center rounded-lg text-slate-400 transition hover:bg-rose-50 hover:text-rose-600" :aria-label="`Excluir categoria ${category.name}`" :title="`Excluir categoria ${category.name}`">×</button>
+                    </div>
                 </nav>
 
                 <div class="mt-auto rounded-2xl bg-gradient-to-br from-indigo-600 to-violet-600 p-4 text-white">
@@ -71,6 +76,7 @@
                         <button class="grid size-10 place-items-center rounded-full border border-slate-200 bg-white text-slate-500 transition hover:border-indigo-200 hover:text-indigo-600" aria-label="Notificações">
                             <span class="relative text-lg">♧<span class="absolute right-0 top-0 size-2 rounded-full bg-rose-500 ring-2 ring-white"></span></span>
                         </button>
+                        <button @click="logoutUser" type="button" class="rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-600 transition hover:border-rose-200 hover:text-rose-600">Sair</button>
                         <div class="grid size-9 place-items-center rounded-full bg-amber-100 text-sm font-bold text-amber-700 lg:hidden">M</div>
                     </div>
                 </header>
@@ -120,22 +126,33 @@
                         <div class="border-b border-slate-100 px-4 pt-4 sm:px-6 sm:pt-5">
                             <div class="flex items-center justify-between gap-3">
                                 <div class="flex items-center gap-1 overflow-x-auto">
-                                    <button
+                                    <span
                                         v-for="category in categoryTabs"
                                         :key="category"
-                                        @click="activeCategory = category"
-                                        class="shrink-0 rounded-lg px-3 py-2 text-xs font-semibold transition sm:px-4 sm:text-sm"
-                                        :class="activeCategory === category ? 'bg-indigo-50 text-indigo-700' : 'text-slate-400 hover:bg-slate-50 hover:text-slate-600'"
-                                    >{{ category }}</button>
+                                        class="group inline-flex shrink-0 items-center gap-0.5 rounded-lg"
+                                    >
+                                        <button @click="activeCategory = category" type="button" class="rounded-lg px-3 py-2 text-xs font-semibold transition sm:px-4 sm:text-sm" :class="activeCategory === category ? 'bg-indigo-50 text-indigo-700' : 'text-slate-400 hover:bg-slate-50 hover:text-slate-600'">{{ category }}</button>
+                                        <button v-if="category !== 'Todas'" @click="requestCategoryDeletion(category)" type="button" class="grid size-7 place-items-center rounded-md text-slate-400 transition hover:bg-rose-50 hover:text-rose-600" :aria-label="`Excluir categoria ${category}`" :title="`Excluir categoria ${category}`">×</button>
+                                    </span>
                                 </div>
-                                <button @click="sortByPriority = !sortByPriority" class="hidden shrink-0 items-center gap-2 rounded-lg px-3 py-2 text-xs font-semibold text-slate-500 hover:bg-slate-50 sm:flex">
-                                    <span>☷</span>{{ sortByPriority ? 'Prioridade' : 'Ordenar' }}
-                                </button>
+                                <div class="flex shrink-0 items-center gap-1">
+                                    <button @click="isAddingCategory = !isAddingCategory" type="button" class="grid size-8 place-items-center rounded-lg text-lg leading-none text-slate-400 transition hover:bg-slate-100 hover:text-indigo-600" :aria-expanded="isAddingCategory" aria-label="Adicionar categoria" title="Adicionar categoria">+</button>
+                                    <button @click="sortByPriority = !sortByPriority" class="hidden shrink-0 items-center gap-2 rounded-lg px-3 py-2 text-xs font-semibold text-slate-500 hover:bg-slate-50 sm:flex">
+                                        <span>☷</span>{{ sortByPriority ? 'Prioridade' : 'Ordenar' }}
+                                    </button>
+                                </div>
                             </div>
+                            <form v-if="isAddingCategory" @submit.prevent="addCategory" class="flex flex-wrap gap-2 border-t border-slate-100 py-3" aria-label="Nova categoria">
+                                <input v-model="newCategoryName" type="text" maxlength="40" placeholder="Nome da categoria" aria-label="Nome da categoria" class="min-w-0 flex-1 rounded-lg border border-slate-200 px-3 py-2 text-sm outline-none focus:border-indigo-400">
+                                <button type="submit" class="rounded-lg bg-indigo-600 px-3 py-2 text-xs font-semibold text-white transition hover:bg-indigo-700 sm:text-sm">Adicionar</button>
+                                <button @click="isAddingCategory = false; newCategoryName = ''; categoryMessage = ''" type="button" class="rounded-lg border border-slate-200 px-3 py-2 text-xs font-semibold text-slate-600 transition hover:bg-slate-50 sm:text-sm">Cancelar</button>
+                            </form>
+                            <p v-if="categoryMessage" role="status" class="pb-2 text-xs text-rose-600">{{ categoryMessage }}</p>
                             <div class="mt-3 flex items-center justify-between border-t border-slate-100 py-4">
                                 <div>
                                     <h2 class="text-base font-bold text-slate-800">Sua lista</h2>
                                     <p class="mt-0.5 text-xs text-slate-400">{{ filteredTasks.length }} {{ filteredTasks.length === 1 ? 'tarefa' : 'tarefas' }}</p>
+                                    <p v-if="storageMessage" role="status" aria-live="polite" class="mt-1 text-xs" :class="storageError ? 'text-rose-600' : 'text-slate-400'">{{ storageMessage }}</p>
                                 </div>
                                 <span class="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-500">{{ currentListLabel }}</span>
                             </div>
@@ -148,11 +165,12 @@
                                 v-model="newTaskTitle"
                                 type="text"
                                 maxlength="100"
-                                placeholder="Adicione uma tarefa..."
-                                aria-label="Nova tarefa"
+                                :placeholder="editingTaskId === null ? 'Adicione uma tarefa...' : 'Edite a tarefa...'"
+                                :aria-label="editingTaskId === null ? 'Nova tarefa' : 'Editar tarefa'"
                                 class="min-w-0 flex-1 bg-transparent py-2 text-sm text-slate-800 outline-none placeholder:text-slate-400"
                             >
-                            <button type="submit" class="rounded-lg bg-indigo-600 px-3 py-2 text-xs font-semibold text-white transition hover:bg-indigo-700 sm:px-4 sm:text-sm">Adicionar</button>
+                            <button type="submit" class="rounded-lg bg-indigo-600 px-3 py-2 text-xs font-semibold text-white transition hover:bg-indigo-700 sm:px-4 sm:text-sm">{{ editingTaskId === null ? 'Adicionar' : 'Salvar' }}</button>
+                            <button v-if="editingTaskId !== null" @click="cancelEdit" type="button" class="rounded-lg border border-slate-200 px-3 py-2 text-xs font-semibold text-slate-600 transition hover:bg-slate-50 sm:text-sm">Cancelar</button>
                         </form>
 
                         <div v-if="filteredTasks.length" class="divide-y divide-slate-100">
@@ -168,7 +186,7 @@
                                     <div class="mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-slate-400">
                                         <span class="flex items-center gap-1"><span>◷</span>{{ task.due }}</span>
                                         <span class="flex items-center gap-1.5">
-                                            <span class="size-1.5 rounded-full" :class="task.category === 'Trabalho' ? 'bg-violet-400' : 'bg-amber-400'"></span>
+                                            <span class="size-1.5 rounded-full" :class="categoryColor(task.category)"></span>
                                             {{ task.category }}
                                         </span>
                                     </div>
@@ -176,7 +194,7 @@
                                 <span class="hidden rounded-full px-2.5 py-1 text-[11px] font-semibold sm:inline-flex" :class="priorityClass(task.priority)">{{ task.priority }}</span>
                                 <div class="flex shrink-0 items-center gap-1 opacity-100 transition sm:opacity-0 sm:group-hover:opacity-100">
                                     <button @click="editTask(task)" class="grid size-8 place-items-center rounded-lg text-slate-400 transition hover:bg-indigo-50 hover:text-indigo-600" aria-label="Editar tarefa">✎</button>
-                                    <button @click="deleteTask(task.id)" class="grid size-8 place-items-center rounded-lg text-slate-400 transition hover:bg-rose-50 hover:text-rose-500" aria-label="Excluir tarefa">×</button>
+                                    <button @click="requestTaskDeletion(task)" class="grid size-8 place-items-center rounded-lg text-slate-400 transition hover:bg-rose-50 hover:text-rose-500" aria-label="Excluir tarefa">×</button>
                                 </div>
                             </article>
                         </div>
@@ -197,13 +215,31 @@
             <button @click="activeView = 'upcoming'" class="flex min-w-16 flex-col items-center gap-1 py-1 text-[10px] font-semibold" :class="activeView === 'upcoming' ? 'text-indigo-600' : 'text-slate-400'"><span class="text-xl">▦</span>Próximas</button>
             <button @click="activeView = 'completed'" class="flex min-w-16 flex-col items-center gap-1 py-1 text-[10px] font-semibold" :class="activeView === 'completed' ? 'text-indigo-600' : 'text-slate-400'"><span class="text-xl">✓</span>Concluídas</button>
         </nav>
+
+        <div v-if="pendingDeletion" @click.self="cancelDeletion" @keydown.esc="cancelDeletion" tabindex="-1" class="fixed inset-0 z-50 grid place-items-center bg-slate-950/45 p-4" role="presentation">
+            <section role="alertdialog" aria-modal="true" aria-labelledby="delete-dialog-title" aria-describedby="delete-dialog-description" class="w-full max-w-sm rounded-xl border border-slate-200 bg-white p-5 shadow-2xl sm:p-6">
+                <h2 id="delete-dialog-title" class="text-lg font-bold text-slate-900">{{ pendingDeletion.type === 'task' ? 'Excluir tarefa?' : 'Excluir categoria?' }}</h2>
+                <p id="delete-dialog-description" class="mt-2 text-sm leading-6 text-slate-600">
+                    {{ pendingDeletion.type === 'task' ? `A tarefa “${pendingDeletion.label}” será removida.` : `A categoria “${pendingDeletion.label}” será removida. As tarefas dela serão transferidas para outra categoria.` }}
+                </p>
+                <div class="mt-6 flex justify-end gap-2">
+                    <button @click="cancelDeletion" type="button" class="rounded-lg border border-slate-200 px-4 py-2 text-sm font-semibold text-slate-600 transition hover:bg-slate-50">Cancelar</button>
+                    <button @click="confirmDeletion" type="button" class="rounded-lg bg-rose-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-rose-700">Excluir</button>
+                </div>
+            </section>
+        </div>
     </div>
 
     <script>
         const { createApp, ref, computed } = Vue;
+        const STORAGE_URL = "https://onlinestorage.you.tec.br/api/";
+        const STORAGE_BUCKET = "metadodia-web";
 
         createApp({
             setup() {
+                const authenticatedUser = sessionStorage.getItem("metadodia-authenticated-user") || "";
+                const authenticatedUserName = sessionStorage.getItem("metadodia-authenticated-user-name");
+            const userDataKey = `tasks-${authenticatedUser.trim().toLowerCase()}`;
                 const today = new Date();
                 const dateFormatter = new Intl.DateTimeFormat("pt-BR", {
                     weekday: "long",
@@ -211,30 +247,35 @@
                     month: "long"
                 });
                 const hour = today.getHours();
-                const greeting = hour < 12 ? "Bom dia, Marina ☀️" : hour < 18 ? "Boa tarde, Marina ☀️" : "Boa noite, Marina ✨";
-                const tasks = ref([
-                    { id: 1, title: "Revisar apresentação do projeto", due: "09:30", category: "Trabalho", priority: "Alta", period: "today", done: false },
-                    { id: 2, title: "Responder aos e-mails pendentes", due: "10:00", category: "Trabalho", priority: "Normal", period: "today", done: false },
-                    { id: 3, title: "Fazer uma pausa para o café", due: "10:45", category: "Pessoal", priority: "Baixa", period: "today", done: true },
-                    { id: 4, title: "Alinhar próximos passos com a equipe", due: "13:30", category: "Trabalho", priority: "Alta", period: "today", done: false },
-                    { id: 5, title: "Organizar a lista de compras", due: "15:00", category: "Pessoal", priority: "Normal", period: "today", done: false },
-                    { id: 6, title: "Separar referências para a nova ideia", due: "Amanhã", category: "Trabalho", priority: "Normal", period: "upcoming", done: false },
-                    { id: 7, title: "Marcar consulta de rotina", due: "Sex, 10:00", category: "Pessoal", priority: "Baixa", period: "upcoming", done: false }
-                ]);
+                const greeting = hour < 12 ? `Bom dia, ${authenticatedUserName} ☀️` : hour < 18 ? `Boa tarde, ${authenticatedUserName} ☀️` : `Boa noite, ${authenticatedUserName} ✨`;
+                const defaultTasks = [
+                    { id: 1, title: "Revisar apresentação do projeto", due: "09:30", category: "Trabalho", priority: "Alta", period: "today", done: false }                    
+                ];
+                const defaultCategories = [
+                    { name: "Todas", color: "bg-slate-400" },
+                    { name: "Trabalho", color: "bg-violet-400" },
+                    { name: "Pessoal", color: "bg-amber-400" }
+                ];
+                const tasks = ref(defaultTasks.map((task) => ({ ...task })));
+                const categories = ref(defaultCategories.map((category) => ({ ...category })));
+                const isLoading = ref(true);
+                const storageMessage = ref("Carregando seus dados...");
+                const storageError = ref(false);
+                const isAddingCategory = ref(false);
+                const newCategoryName = ref("");
+                const categoryMessage = ref("");
+                const pendingDeletion = ref(null);
+                let saveQueue = Promise.resolve();
                 const navigation = [
                     { id: "today", label: "Hoje", icon: "☷" },
                     { id: "upcoming", label: "Próximas", icon: "▦" },
                     { id: "completed", label: "Concluídas", icon: "✓" },
                     { id: "all", label: "Todas as tarefas", icon: "▤" }
                 ];
-                const categories = [
-                    { name: "Todas", color: "bg-slate-400" },
-                    { name: "Trabalho", color: "bg-violet-400" },
-                    { name: "Pessoal", color: "bg-amber-400" }
-                ];
                 const activeView = ref("today");
                 const activeCategory = ref("Todas");
                 const newTaskTitle = ref("");
+                const editingTaskId = ref(null);
                 const sortByPriority = ref(false);
                 const taskInput = ref(null);
 
@@ -257,7 +298,7 @@
                     completed: "Concluídas",
                     all: "Tudo"
                 }[activeView.value]));
-                const categoryTabs = ["Todas", "Trabalho", "Pessoal"];
+                const categoryTabs = computed(() => categories.value.map((category) => category.name));
                 const filteredTasks = computed(() => {
                     let result = tasks.value.filter((task) => {
                         const viewMatches = activeView.value === "all"
@@ -277,41 +318,223 @@
                     activeView.value = "all";
                 }
 
+                function resetDefaultData() {
+                    tasks.value = defaultTasks.map((task) => ({ ...task }));
+                    categories.value = defaultCategories.map((category) => ({ ...category }));
+                }
+
+                async function readResponse(response, fallbackMessage) {
+                    const responseText = await response.text();
+                    let responseData = {};
+                    try {
+                        responseData = responseText ? JSON.parse(responseText) : {};
+                    } catch {
+                        throw new Error("A resposta da API não é um JSON válido.");
+                    }
+                    if (!response.ok) {
+                        throw new Error(responseData.message || responseData.error || fallbackMessage);
+                    }
+                    return responseData;
+                }
+
+                async function loadUserData() {
+                    try {
+                        const response = await fetch(`${STORAGE_URL}getkey/${STORAGE_BUCKET}/${encodeURIComponent(userDataKey)}`, {
+                            headers: { "Accept": "application/json" }
+                        });
+                        if (response.status === 404) {
+                            resetDefaultData();
+                            storageMessage.value = "Seus dados ainda não foram salvos.";
+                            return;
+                        }
+
+                        const responseData = await readResponse(response, "Não foi possível carregar suas tarefas.");
+                        if (!Object.prototype.hasOwnProperty.call(responseData, "value")) {
+                            throw new Error("A resposta da API não contém os dados das tarefas esperados.");
+                        }
+
+                        const savedData = responseData.value;
+                        if (!savedData || typeof savedData !== "object" || Array.isArray(savedData)) {
+                            throw new Error("Os dados salvos para este usuário estão em um formato inválido.");
+                        }
+                        tasks.value = Array.isArray(savedData.tasks) ? savedData.tasks : [];
+                        categories.value = Array.isArray(savedData.categories) && savedData.categories.length
+                            ? savedData.categories
+                            : defaultCategories.map((category) => ({ ...category }));
+                        storageMessage.value = "Dados sincronizados.";
+                    } catch (error) {
+                        resetDefaultData();
+                        storageError.value = true;
+                        storageMessage.value = `${error.message || "Não foi possível conectar à API."} Suas alterações não serão salvas.`;
+                    } finally {
+                        isLoading.value = false;
+                    }
+                }
+
+                function saveUserData() {
+                    if (isLoading.value || storageError.value) return;
+                    const value = JSON.stringify({ tasks: tasks.value, categories: categories.value });
+                    storageMessage.value = "Salvando...";
+                    storageError.value = false;
+                    saveQueue = saveQueue.catch(() => {}).then(async () => {
+                        const response = await fetch(STORAGE_URL, {
+                            method: "POST",
+                            headers: {
+                                "Accept": "application/json",
+                                "Content-Type": "application/json"
+                            },
+                            body: JSON.stringify({ bucket: STORAGE_BUCKET, key: userDataKey, value: JSON.parse(value) })
+                        });
+                        await readResponse(response, "Não foi possível salvar suas tarefas.");
+                        storageMessage.value = "Alterações salvas.";
+                    }).catch((error) => {
+                        storageError.value = true;
+                        storageMessage.value = error.message || "Não foi possível salvar suas tarefas.";
+                    });
+                }
+
+                function addCategory() {
+                    if (isLoading.value) return;
+                    const categoryName = newCategoryName.value.trim();
+                    if (!categoryName) return;
+                    if (categories.value.some((category) => category.name.toLowerCase() === categoryName.toLowerCase())) {
+                        categoryMessage.value = "Essa categoria já existe.";
+                        return;
+                    }
+                    const categoryColors = ["bg-violet-400", "bg-amber-400", "bg-emerald-400", "bg-sky-400", "bg-rose-400"];
+                    categories.value.push({
+                        name: categoryName,
+                        color: categoryColors[(categories.value.length - 1) % categoryColors.length]
+                    });
+                    activeCategory.value = categoryName;
+                    activeView.value = "all";
+                    newCategoryName.value = "";
+                    categoryMessage.value = "";
+                    isAddingCategory.value = false;
+                    saveUserData();
+                }
+
+                function deleteCategory(categoryName) {
+                    if (isLoading.value || categoryName === "Todas") return;
+                    const remainingCategories = categories.value.filter((category) => category.name !== categoryName);
+                    let fallbackCategory = remainingCategories.find((category) => category.name !== "Todas");
+
+                    if (!fallbackCategory) {
+                        const fallbackName = categoryName.toLowerCase() === "pessoal" ? "Trabalho" : "Pessoal";
+                        fallbackCategory = {
+                            name: fallbackName,
+                            color: fallbackName === "Trabalho" ? "bg-violet-400" : "bg-amber-400"
+                        };
+                        remainingCategories.push(fallbackCategory);
+                    }
+
+                    tasks.value.forEach((task) => {
+                        if (task.category === categoryName) task.category = fallbackCategory.name;
+                    });
+                    categories.value = remainingCategories;
+                    if (activeCategory.value === categoryName) {
+                        activeCategory.value = "Todas";
+                        activeView.value = "all";
+                    }
+                    saveUserData();
+                }
+
+                function requestTaskDeletion(task) {
+                    if (isLoading.value) return;
+                    pendingDeletion.value = { type: "task", id: task.id, label: task.title };
+                }
+
+                function requestCategoryDeletion(categoryName) {
+                    if (isLoading.value || categoryName === "Todas") return;
+                    pendingDeletion.value = { type: "category", name: categoryName, label: categoryName };
+                }
+
+                function cancelDeletion() {
+                    pendingDeletion.value = null;
+                }
+
+                function confirmDeletion() {
+                    const deletion = pendingDeletion.value;
+                    if (!deletion) return;
+                    pendingDeletion.value = null;
+                    if (deletion.type === "task") {
+                        deleteTask(deletion.id);
+                    } else {
+                        deleteCategory(deletion.name);
+                    }
+                }
+
                 function addTask() {
+                    if (isLoading.value) return;
                     const title = newTaskTitle.value.trim();
                     if (!title) {
                         taskInput.value?.focus();
+                        return;
+                    }
+                    if (editingTaskId.value !== null) {
+                        const task = tasks.value.find((item) => item.id === editingTaskId.value);
+                        if (task) task.title = title;
+                        editingTaskId.value = null;
+                        newTaskTitle.value = "";
+                        saveUserData();
                         return;
                     }
                     tasks.value.unshift({
                         id: Date.now(),
                         title,
                         due: "Sem horário",
-                        category: activeCategory.value === "Trabalho" ? "Trabalho" : "Pessoal",
+                        category: categories.value.some((category) => category.name === activeCategory.value && category.name !== "Todas")
+                            ? activeCategory.value
+                            : categories.value.find((category) => category.name !== "Todas")?.name || "Pessoal",
                         priority: "Normal",
                         period: "today",
                         done: false
                     });
                     activeView.value = "today";
                     newTaskTitle.value = "";
+                    saveUserData();
                 }
 
                 function toggleTask(task) {
+                    if (isLoading.value) return;
                     task.done = !task.done;
+                    saveUserData();
                 }
 
                 function editTask(task) {
-                    const updatedTitle = window.prompt("Edite sua tarefa:", task.title);
-                    if (updatedTitle && updatedTitle.trim()) task.title = updatedTitle.trim();
+                    if (isLoading.value) return;
+                    editingTaskId.value = task.id;
+                    newTaskTitle.value = task.title;
+                    focusInput();
+                }
+
+                function cancelEdit() {
+                    editingTaskId.value = null;
+                    newTaskTitle.value = "";
                 }
 
                 function deleteTask(id) {
+                    if (isLoading.value) return;
                     tasks.value = tasks.value.filter((task) => task.id !== id);
+                    if (editingTaskId.value === id) cancelEdit();
+                    saveUserData();
+                }
+
+                function categoryColor(categoryName) {
+                    return categories.value.find((category) => category.name === categoryName)?.color || "bg-slate-400";
                 }
 
                 function focusInput() {
                     taskInput.value?.focus();
                     taskInput.value?.scrollIntoView({ behavior: "smooth", block: "center" });
+                }
+
+                function logoutUser() {
+                    ["metadodia-authenticated-user", "metadodia-authenticated-user-name"].forEach((key) => {
+                        sessionStorage.removeItem(key);
+                        localStorage.removeItem(key);
+                    });
+                    window.location.replace("login.html");
                 }
 
                 function priorityClass(priority) {
@@ -322,27 +545,46 @@
                     }[priority];
                 }
 
+                loadUserData();
+
                 return {
                     activeCategory,
                     activeView,
                     addTask,
+                    addCategory,
+                    cancelEdit,
                     categories,
                     categoryTabs,
+                    categoryColor,
                     completedToday,
+                    categoryMessage,
                     currentListLabel,
+                    cancelDeletion,
+                    confirmDeletion,
                     deleteTask,
+                    deleteCategory,
                     editTask,
+                    editingTaskId,
                     filteredTasks,
                     focusInput,
                     formattedDate,
                     greeting,
+                    isLoading,
+                    isAddingCategory,
                     navigation,
+                    newCategoryName,
                     newTaskTitle,
+                    logoutUser,
+                    pendingDeletion,
                     pageTitle,
                     priorityClass,
                     progress,
+                    requestCategoryDeletion,
+                    requestTaskDeletion,
                     selectCategory,
                     sortByPriority,
+                    storageError,
+                    storageMessage,
                     taskInput,
                     todayCount,
                     todayTotal,
