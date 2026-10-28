@@ -15,6 +15,14 @@
 
     
     <script>
+        const rememberedUser = localStorage.getItem("metadodia-authenticated-user");
+        const rememberEnabled = localStorage.getItem("metadodia-remember-user") === "true";
+
+        if (!sessionStorage.getItem("metadodia-authenticated-user") && rememberEnabled && rememberedUser) {
+            sessionStorage.setItem("metadodia-authenticated-user", rememberedUser);
+            sessionStorage.setItem("metadodia-authenticated-user-name", localStorage.getItem("metadodia-authenticated-user-name") || "");
+        }
+
         if (!sessionStorage.getItem("metadodia-authenticated-user")) {
             window.location.replace("login.html");
         }
